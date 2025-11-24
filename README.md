@@ -101,24 +101,11 @@ Encendido: Verde (#00ff00) para Z y N, Rojo (#ff3333) para C y V, relieve hundid
 Nombre completo: ZERO, NEGATIVE, CARRY, OVERFLOW
 Descripción breve de qué representa
 Ejemplo visual:
-
-┌─────┐  ZERO
-│  Z  │  Resultado = 0
-└─────┘
-┌─────┐  CARRY
-│  C  │  Desbordamiento sin signo
-└─────┘
 🔄 Actualización en Tiempo Real
 Los valores binarios de A y B se actualizan mientras el usuario escribe
 Validación visual con colores (verde = válido, rojo = error)
 Mensajes de error claros en cuadros de diálogo
-PASO 3: Ejecución
-if __name__ == "__main__":
-    main()
-El bloque estándar permite:
 
-Ejecutar directamente: python alu_simulator.py
-Importar como módulo sin ejecutar automáticamente
 🧪 Ejemplo de Uso
 Caso 1: Suma con Carry
 Entrada:
