@@ -12,6 +12,75 @@ Este programa simula el funcionamiento de una ALU real, incluyendo:
 """
 
 # ==============================================================================
+# IMPORTACIONES
+# ==============================================================================
+
+import tkinter as tk
+from tkinter import ttk, messagebox
+from datetime import datetime
+
+# Importar pymongo con manejo de error
+try:
+    from pymongo import MongoClient
+    from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+    PYMONGO_AVAILABLE = True
+except ImportError:
+    PYMONGO_AVAILABLE = False
+    print("⚠️ pymongo no instalado. Logging deshabilitado.")
+
+
+# ==============================================================================
+# CLASE ALULOGGER - PERSISTENCIA CON MONGODB
+# ==============================================================================
+
+class ALULogger:
+    """
+    Maneja el logging de operaciones ALU en MongoDB.
+    No rompe la app si MongoDB no está disponible.
+    """
+    
+    def __init__(self):
+        self.connected = False
+        self.client = None
+        
+        if not PYMONGO_AVAILABLE:
+            return
+        
+        try:
+            self.client = MongoClient('localhost', 27017, serverSelectionTimeoutMS=2000)
+            self.client.admin.command('ping')
+            self.db = self.client['alu_simulator']
+            self.collection = self.db['operation_logs']
+            self.connected = True
+            print("✅ MongoDB: Conectado")
+        except:
+            print("⚠️ MongoDB: No disponible")
+            self.connected = False
+    
+    def guardar_operacion(self, a, b, operacion, resultado, banderas):
+        if not self.connected:
+            return False
+        try:
+            doc = {
+                "timestamp": datetime.now().isoformat(),
+                "operando_a": a,
+                "operando_b": b,
+                "operacion": operacion,
+                "resultado": resultado,
+                "banderas": banderas
+            }
+            self.collection.insert_one(doc)
+            return True
+        except:
+            return False
+    
+    def get_status(self):
+        if not PYMONGO_AVAILABLE:
+            return (False, "pymongo no instalado")
+        return (self.connected, "Conectado" if self.connected else "Desconectado")
+
+
+# ==============================================================================
 # PASO 1: LA LÓGICA (BACKEND) - CLASE ALU
 # ==============================================================================
 
@@ -417,6 +486,9 @@ class ALUSimulatorGUI:
         self.clock_job_id = None
         self.selected_operation = ALU.OP_ADD  # Operación por defecto
         self.clock_pulse_state = False  # Para parpadeo del LED de pulso
+        
+        # Inicializar logger de MongoDB
+        self.logger = ALULogger()
         
         # Configurar estilos y crear widgets
         self.setup_styles()
@@ -880,6 +952,23 @@ class ALUSimulatorGUI:
             pady=5
         )
         self.status_label.pack(fill="x")
+        
+        # ===== INDICADOR DE ESTADO DE BD =====
+        db_status, db_msg = self.logger.get_status()
+        db_text = f"Estado DB: {'Conectado 🟢' if db_status else 'Desconectado 🔴 (' + db_msg + ')'}"
+        db_fg = "#00ff00" if db_status else "#ff6b6b"
+        
+        self.db_status_label = tk.Label(
+            self.root,
+            text=db_text,
+            font=("Arial", 8),
+            bg=self.bg_color,
+            fg=db_fg,
+            anchor="e",
+            padx=10,
+            pady=2
+        )
+        self.db_status_label.pack(side="bottom", fill="x")
     
     # ==========================================================================
     # TAREA 1: SINCRONIZACIÓN BIDIRECCIONAL DE BITS
@@ -1132,6 +1221,9 @@ class ALUSimulatorGUI:
                 op_name = ALU.get_operation_name(self.selected_operation)
                 self.update_status_bar(flags, op_name, a, b, result)
                 
+                # LOGGING: Guardar en MongoDB
+                self.logger.guardar_operacion(a, b, op_name, result, flags)
+                
                 # FLUJO DE DATOS: Transferir resultado a Registro A (Acumulador)
                 self.entry_a.delete(0, tk.END)
                 self.entry_a.insert(0, str(result))
@@ -1266,6 +1358,9 @@ class ALUSimulatorGUI:
             # ===== TAREA 3: ACTUALIZAR BARRA DE ESTADO INFORMATIVA =====
             op_name = ALU.get_operation_name(opcode)
             self.update_status_bar(flags, op_name, a, b, result)
+            
+            # LOGGING: Guardar en MongoDB
+            self.logger.guardar_operacion(a, b, op_name, result, flags)
         
         except ValueError:
             messagebox.showerror(
