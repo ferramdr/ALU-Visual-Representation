@@ -412,6 +412,12 @@ class ALUSimulatorGUI:
         # Variable para toggle signed/unsigned
         self.show_signed = tk.IntVar(value=0)
         
+        # Variables para simulación de reloj (clock)
+        self.clock_running = False
+        self.clock_job_id = None
+        self.selected_operation = ALU.OP_ADD  # Operación por defecto
+        self.clock_pulse_state = False  # Para parpadeo del LED de pulso
+        
         # Configurar estilos y crear widgets
         self.setup_styles()
         self.create_widgets()
@@ -469,7 +475,7 @@ class ALUSimulatorGUI:
         
         tk.Label(
             title_frame,
-            text="🖥️ SIMULADOR DE ALU - 8 BITS PRO",
+            text="🖥️ SIMULADOR DE CPU - ALU DE 8 BITS",
             font=("Arial", 22, "bold"),
             bg=self.bg_color,
             fg=self.bright_accent
@@ -477,16 +483,41 @@ class ALUSimulatorGUI:
         
         tk.Label(
             title_frame,
-            text="Unidad Aritmético Lógica | Visualización Interactiva de Bits",
+            text="Unidad Aritmético Lógica | Simulación de Procesador con Reloj",
             font=("Arial", 10),
             bg=self.bg_color,
             fg=self.fg_color
         ).pack()
         
+        # ===== SECCIÓN DE RELOJ (CLOCK) =====
+        clock_frame = tk.Frame(self.root, bg=self.bg_color)
+        clock_frame.pack(pady=8)
+        
+        # Indicador LED de pulso de reloj
+        self.clock_led = tk.Label(
+            clock_frame,
+            text="●",
+            font=("Arial", 20, "bold"),
+            bg=self.bg_color,
+            fg="#555555",  # Gris apagado
+            width=2
+        )
+        self.clock_led.pack(side="left", padx=5)
+        
+        # Etiqueta de estado del reloj
+        self.clock_status_label = tk.Label(
+            clock_frame,
+            text="Ciclo de Reloj: [DETENIDO]",
+            font=("Arial", 11, "bold"),
+            bg=self.bg_color,
+            fg="#888888"
+        )
+        self.clock_status_label.pack(side="left", padx=5)
+        
         # ===== SECCIÓN DE OPERANDOS CON CHECKBUTTONS =====
         operands_frame = tk.LabelFrame(
             self.root,
-            text="  OPERANDOS (0-255 en decimal)  ",
+            text="  REGISTROS DEL PROCESADOR (0-255)  ",
             font=("Arial", 11, "bold"),
             bg=self.bg_color,
             fg=self.bright_accent,
@@ -495,11 +526,11 @@ class ALUSimulatorGUI:
         )
         operands_frame.pack(padx=20, pady=5, fill="x")
         
-        # === OPERANDO A ===
+        # === REGISTRO ACUMULADOR (ACC) ===
         # Fila 1: Label, Entry, Binario
         tk.Label(
             operands_frame,
-            text="Operando A:",
+            text="Registro Acumulador (ACC):",
             font=("Arial", 11, "bold"),
             bg=self.bg_color,
             fg=self.fg_color
@@ -563,11 +594,11 @@ class ALUSimulatorGUI:
         # Vincular evento de cambio de texto
         self.entry_a.bind("<KeyRelease>", self.update_binary_a)
         
-        # === OPERANDO B ===
+        # === REGISTRO B (TMP) ===
         # Fila 3: Label, Entry, Binario
         tk.Label(
             operands_frame,
-            text="Operando B:",
+            text="Registro B (TMP):",
             font=("Arial", 11, "bold"),
             bg=self.bg_color,
             fg=self.fg_color
@@ -664,7 +695,7 @@ class ALUSimulatorGUI:
                 activeforeground="white",
                 width=13,
                 height=2,
-                command=lambda op=opcode: self.execute_operation(op),
+                command=lambda op=opcode: self.select_operation(op),
                 cursor="hand2",
                 relief="raised",
                 bd=3
@@ -750,6 +781,24 @@ class ALUSimulatorGUI:
             state="disabled"  # Deshabilitado hasta que haya un resultado
         )
         self.btn_accumulator.pack(pady=5)
+        
+        # Botón de reloj (clock)
+        self.btn_clock = tk.Button(
+            result_frame,
+            text="▶ Iniciar Reloj (Auto)",
+            font=("Arial", 10, "bold"),
+            bg="#228b22",  # Verde oscuro
+            fg="white",
+            activebackground="#32cd32",
+            activeforeground="white",
+            width=25,
+            height=1,
+            command=self.toggle_clock,
+            cursor="hand2",
+            relief="raised",
+            bd=3
+        )
+        self.btn_clock.pack(pady=5)
         
         # ===== SECCIÓN DE BANDERAS (FLAGS) - ESTILO LED =====
         flags_frame = tk.LabelFrame(
@@ -951,6 +1000,168 @@ class ALUSimulatorGUI:
         self.label_b_bin.config(text=f"Binario: {binary_formatted}", fg="#00ff88")
         
         self.updating_from_bits_b = False
+    
+    # ==========================================================================
+    # SIMULACIÓN DE RELOJ (CLOCK)
+    # ==========================================================================
+    
+    def select_operation(self, opcode):
+        """
+        Selecciona una operación y la ejecuta inmediatamente.
+        También guarda cuál es la operación seleccionada para el modo reloj.
+        """
+        self.selected_operation = opcode
+        self.execute_operation(opcode)
+    
+    def toggle_clock(self):
+        """
+        Alterna entre iniciar y detener el reloj automático.
+        """
+        if self.clock_running:
+            self.stop_clock()
+        else:
+            self.start_clock()
+    
+    def start_clock(self):
+        """
+        Inicia la simulación de reloj automático.
+        Cada ciclo (1.5 segundos):
+        1. Genera un número aleatorio para Registro B
+        2. Ejecuta la operación seleccionada
+        3. Actualiza el Registro A (acumulador) con el resultado
+        4. Hace parpadear el LED de pulso de relojimport random
+        """
+        if not self.clock_running:
+            import random  # Necesario para generar números aleatorios
+            self.clock_running = True
+            
+            # Cambiar apariencia del botón
+            self.btn_clock.config(
+                text="⏹ Detener Reloj",
+                bg="#dc143c",  # Rojo oscuro
+                activebackground="#ff4444"
+            )
+            
+            # Actualizar estado
+            self.clock_status_label.config(
+                text="Ciclo de Reloj: [ACTIVO - EJECUTANDO]",
+                fg=self.result_color
+            )
+            
+            # Iniciar primer ciclo
+            self.clock_tick()
+    
+    def stop_clock(self):
+        """
+        Detiene la simulación de reloj automático.
+        """
+        self.clock_running = False
+        
+        # Cancelar el job pendiente si existe
+        if self.clock_job_id is not None:
+            self.root.after_cancel(self.clock_job_id)
+            self.clock_job_id = None
+        
+        # Restaurar apariencia del botón
+        self.btn_clock.config(
+            text="▶ Iniciar Reloj (Auto)",
+            bg="#228b22",  # Verde oscuro
+            activebackground="#32cd32"
+        )
+        
+        # Actualizar estado
+        self.clock_status_label.config(
+            text="Ciclo de Reloj: [DETENIDO]",
+            fg="#888888"
+        )
+        
+        # Apagar LED de pulso
+        self.clock_led.config(fg="#555555")
+        self.clock_pulse_state = False
+    
+    def clock_tick(self):
+        """
+        Ejecuta un ciclo de reloj:
+        1. Genera número aleatorio para Registro B (TMP)
+        2. Ejecuta la operación seleccionada
+        3. Transfiere resultado a Registro A (ACC)
+        4. Programa el siguiente ciclo
+        """
+        if not self.clock_running:
+            return
+        
+        import random
+        
+        try:
+            # Pulso visual del LED
+            self.pulse_clock_led()
+            
+            # Generar número aleatorio para Registro B
+            random_value = random.randint(0, 255)
+            self.entry_b.delete(0, tk.END)
+            self.entry_b.insert(0, str(random_value))
+            self.update_binary_b()  # Actualizar visualización binaria
+            
+            # Ejecutar la operación seleccionada
+            a = int(self.entry_a.get())
+            b = random_value
+            
+            if 0 <= a <= 255 and 0 <= b <= 255:
+                result, flags = self.alu.execute(a, b, self.selected_operation)
+                
+                # Guardar resultado
+                self.current_result = result
+                self.current_opcode = self.selected_operation
+                
+                # Actualizar visualización de resultado
+                self.update_result_display()
+                self.btn_accumulator.config(state="normal")
+                
+                # Actualizar banderas LED
+                for flag, value in flags.items():
+                    led = self.flag_leds[flag]
+                    if value == 1:
+                        if flag in ['C', 'V']:
+                            led.config(bg=self.led_on_red, fg="white", relief="sunken")
+                        else:
+                            led.config(bg=self.led_on_green, fg="black", relief="sunken")
+                    else:
+                        led.config(bg=self.led_off, fg="#555555", relief="raised")
+                
+                # Actualizar barra de estado
+                op_name = ALU.get_operation_name(self.selected_operation)
+                self.update_status_bar(flags, op_name, a, b, result)
+                
+                # FLUJO DE DATOS: Transferir resultado a Registro A (Acumulador)
+                self.entry_a.delete(0, tk.END)
+                self.entry_a.insert(0, str(result))
+                self.update_binary_a()
+            
+            # Programar el siguiente ciclo (1.5 segundos = 1500 ms)
+            self.clock_job_id = self.root.after(1500, self.clock_tick)
+            
+        except Exception as e:
+            # Si hay error, detener el reloj
+            self.status_label.config(
+                text=f"❌ Error en ciclo de reloj: {str(e)}",
+                bg=self.led_on_red,
+                fg="white"
+            )
+            self.stop_clock()
+    
+    def pulse_clock_led(self):
+        """
+        Hace parpadear el LED de pulso de reloj (rojo/verde).
+        Simula visualmente el pulso del clock del procesador.
+        """
+        if self.clock_pulse_state:
+            # Cambiar a rojo
+            self.clock_led.config(fg="#ff3333")
+            self.clock_pulse_state = False
+        else:
+            # Cambiar a verde
+            self.clock_led.config(fg="#00ff00")
+            self.clock_pulse_state = True
     
     # ==========================================================================
     # TAREA 2: BOTÓN DE CICLO DE ACUMULADOR
