@@ -173,37 +173,6 @@ Z = 0
 N = 1 ✓ (bit 7 = 1)
 C = 0 (no aplica en operaciones lógicas)
 V = 0 (no aplica en operaciones lógicas)
-📖 Aspectos Educativos
-Comentarios Detallados
-El código incluye explicaciones extensas sobre:
-
-Separación de responsabilidades (backend vs frontend)
-Simulación de hardware (registros de tamaño fijo)
-Complemento a 2 (representación de negativos)
-Detección de overflow (teoría y ejemplos)
-Máscaras de bits (0xFF, 0x80)
-Formato de números (binario, hexadecimal)
-Ejemplos Prácticos
-Cada operación crítica incluye ejemplos:
-
-"""
-Ejemplo: 200 + 100 = 300
-         300 en binario = 100101100 (9 bits)
-         Carry activado (C=1)
-         Resultado cortado: 300 & 0xFF = 44 (00101100)
-| Restricción 8 bits             | ✓      | `& 0xFF` en todos los resultados  |
-| Bandera Z                      | ✓      | Detecta resultado == 0            |
-| Bandera N                      | ✓      | Detecta bit 7 activado            |
-| Bandera C                      | ✓      | Carry/borrow en suma/resta        |
-| Bandera V                      | ✓      | Error de signo en complemento a 2 |
-| Tema oscuro                    | ✓      | Paleta profesional (#1a1a2e)      |
-| Entradas decimales A, B        | ✓      | Con validación 0-255              |
-| Menú/botones operaciones       | ✓      | 6 botones con íconos              |
-| Banderas como "luces"          | ✓      | LEDs cuadrados verde/rojo         |
-| Resultado 3 formatos           | ✓      | Decimal, Hex, Binario simultáneos |
-| Bloque `if __name__`           | ✓      | Correcto para ejecución           |
-| Comentarios educativos         | ✓      | +300 líneas de documentación      |
----
 
 Este simulador permite aprender:
 - Cómo funciona una ALU real a nivel de bits
