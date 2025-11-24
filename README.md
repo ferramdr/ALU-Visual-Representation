@@ -1,171 +1,448 @@
-🖥️ Simulador de ALU de 8 bits
+# 🖥️ Simulador de CPU - ALU de 8 Bits
 
-Estructura del Programa
-Backend - Clase ALU
-- Características Implementadas
-Clase 
-ALU
- - Lógica pura sin interfaz gráfica:
+**Simulador educativo de una Unidad Aritmético-Lógica (ALU) de 8 bits con interfaz gráfica en Python/Tkinter**
 
-Operaciones Aritméticas:
+Este proyecto simula el funcionamiento de un procesador real, mostrando visualmente cómo opera una ALU, cómo se calculan las banderas de estado, y cómo funciona un ciclo de reloj (clock) en un CPU.
 
-✓ ADD (Suma): A + B con detección de carry
-✓ SUB (Resta): A - B con detección de borrow
-Operaciones Lógicas (bit a bit):
+---
 
-✓ AND: Resultado tiene 1 solo donde ambos bits son 1
-✓ OR: Resultado tiene 1 donde al menos uno es 1
-✓ XOR: Resultado tiene 1 donde los bits son diferentes
-✓ NOT: Invierte todos los bits (solo operando A)
-Restricción de 8 bits:
+## 📋 Tabla de Contenidos
 
-Todos los resultados se cortan usando & 0xFF
-Simula el tamaño fijo de registros en hardware real
-🚩 Sistema de Banderas (Flags)
-El sistema calcula 4 banderas principales después de cada operación:
+- [Características Principales](#-características-principales)
+- [Requisitos](#-requisitos)
+- [Instalación](#-instalación)
+- [Uso Básico](#-uso-básico)
+- [Funcionalidades Detalladas](#-funcionalidades-detalladas)
+- [Arquitectura del Código](#-arquitectura-del-código)
+- [Aspectos Educativos](#-aspectos-educativos)
+- [Capturas de Pantalla](#-capturas-de-pantalla)
 
-Z (Zero Flag)
+---
 
-Se activa cuando el resultado es exactamente 0
-Útil para comparaciones (A == B → A - B = 0, Z=1)
-N (Negative Flag)
+## ✨ Características Principales
 
-Se activa cuando el bit 7 (MSB) está en 1
-En complemento a 2, indica número negativo
-Detecta con máscara: resultado & 0x80
-C (Carry Flag)
+### 🔧 Operaciones de la ALU
 
-En suma: Desbordamiento sin signo (resultado > 255)
-En resta: Indica "borrow" necesario (A < B)
-No se afecta en operaciones lógicas
-V (Overflow Flag)
+- **Aritméticas**: ADD (Suma), SUB (Resta)
+- **Lógicas**: AND, OR, XOR, NOT
 
-Detecta errores de signo en complemento a 2
-En suma: Dos positivos dan negativo, o dos negativos dan positivo
-En resta: Signos incorrectos según operación
-Solo para operaciones aritméticas
-📚 Comentarios Educativos
-Cada función incluye:
+### 🚦 Sistema de Banderas (Flags)
 
-Explicación teórica del funcionamiento
-Ejemplos numéricos con binarios
-Casos especiales (overflow, carry, etc.)
-Uso típico en procesadores reales
-Ejemplo de documentación:
+- **Z (Zero)**: Se activa cuando el resultado es 0
+- **N (Negative)**: Se activa cuando el bit 7 está en 1 (número negativo en complemento a 2)
+- **C (Carry)**: Indica desbordamiento en aritmética sin signo
+- **V (Overflow)**: Indica error de signo en aritmética con signo
 
-def _calculate_overflow_add(self, a, b):
-    """
-    CALCULA LA BANDERA V (OVERFLOW) PARA SUMA.
-    TEORÍA DEL OVERFLOW EN SUMA:
-    Overflow ocurre cuando el resultado de una suma tiene un signo
-    incorrecto en representación de complemento a 2.
-    EJEMPLO DE OVERFLOW:
-    A = 100 (01100100) - positivo
-    B = 50  (00110010) - positivo
-    R = 150 (10010110) - ¡NEGATIVO! (bit 7 = 1)
-    Esto es un error porque 100 + 50 debería ser positivo.
-    """
-Frontend - Interfaz Gráfica con Tkinter
-📊 Secciones de la Interface
-1. Entrada de Operandos
+### 🎨 Interfaz Profesional
 
-Campos para A y B (0-255 en decimal)
-Visualización binaria en tiempo real
-Validación automática de rango
-Fuente monoespaciada (Courier) para binarios
-2. Controles de Operación
+- Tema oscuro estilo hardware (#1a1a2e)
+- Indicadores LED para las banderas (verde/rojo)
+- Visualización en 3 formatos: Decimal, Hexadecimal, Binario
+- Formato de nibbles (espacios cada 4 bits: `1111 1111`)
 
-6 botones con símbolos matemáticos:
-➕ ADD (Suma)
-➖ SUB (Resta)
-∧ AND
-∨ OR
-⊕ XOR
-¬ NOT A
-Efectos visuales al pasar el mouse
-3. Visualización de Resultados (3 formatos simultáneos)
+### ⚡ Características Avanzadas
 
-El resultado se muestra en tres formatos al mismo tiempo:
+#### 1. **Visualización Interactiva de Bits**
 
-Formato 1: Decimal y Hexadecimal
-ADD (Suma) = 200 (Dec) = 0xC8 (Hex)
-Formato 2: Binario completo (8 bits)
-Binario: 11001000
-4. Banderas LED (Indicadores Luminosos)
+- 8 checkbuttons por cada registro (Bit 7 a Bit 0)
+- **Sincronización bidireccional**:
+  - ✍️ Escribir número → checkbuttons se actualizan
+  - ☑️ Hacer clic en bit → número se actualiza
+- Sistema anti-loops infinitos
 
-Cada bandera tiene:
+#### 2. **Botón de Acumulador**
 
-LED cuadrado que cambia de color:
-Apagado: Gris oscuro (#2a2a3e), relieve elevado
-Encendido: Verde (#00ff00) para Z y N, Rojo (#ff3333) para C y V, relieve hundido
-Nombre completo: ZERO, NEGATIVE, CARRY, OVERFLOW
-Descripción breve de qué representa
-Ejemplo visual:
-🔄 Actualización en Tiempo Real
-Los valores binarios de A y B se actualizan mientras el usuario escribe
-Validación visual con colores (verde = válido, rojo = error)
-Mensajes de error claros en cuadros de diálogo
+- Simula un registro acumulador real
+- Transfiere el resultado al Registro ACC
+- Reinicia el Registro B (TMP) a 0
+- Útil para operaciones en cadena
 
-🧪 Ejemplo de Uso
-Caso 1: Suma con Carry
-Entrada:
+#### 3. **Barra de Estado Informativa**
 
-A = 200
-B = 100
-Operación: ADD
-Resultado:
+- Mensajes en lenguaje humano sobre las banderas
+- Ejemplos:
+  - `⚠️ ¡OVERFLOW! Desbordamiento de signo detectado`
+  - `🔴 CARRY: El resultado (200+100=300) excedió 8 bits (>255)`
+- Colores dinámicos según severidad
 
-Decimal: 44
-Hexadecimal: 0x2C
-Binario: 00101100
-Banderas:
+#### 4. **Toggle Signed/Unsigned**
 
-Z = 0 (resultado no es cero)
-N = 0 (bit 7 = 0, positivo)
-C = 1 ✓ (200 + 100 = 300 > 255, hubo carry)
-V = 0 (no hay error de signo)
-Caso 2: Resta con Borrow
-Entrada:
+- Checkbox para interpretar resultados como complemento a 2
+- **Unsigned**: 0 a 255 (valor estándar)
+- **Signed**: -128 a 127 (complemento a 2)
+- Ejemplo: `11111111` = 255 (unsigned) o -1 (signed)
 
-A = 5
-B = 10
-Operación: SUB
-Resultado:
+#### 5. **Simulación de Reloj (Clock)** 🆕
 
-Decimal: 251
-Hexadecimal: 0xFB
-Binario: 11111011
-Banderas:
+La característica más impresionante: **el procesador "piensa" por sí mismo**
 
-Z = 0 (resultado no es cero)
-N = 1 ✓ (bit 7 = 1, número negativo en complemento a 2)
-C = 1 ✓ (5 - 10 < 0, se necesitó borrow)
-V = 0 (no hay error de signo)
-Nota: 251 es la representación en 8 bits de -5 en complemento a 2
+- **LED de Pulso**: Parpadea rojo ↔ verde simulando el clock
+- **Terminología de Procesador**:
+  - Registro Acumulador (ACC) - antes "Operando A"
+  - Registro B (TMP) - antes "Operando B"
+- **Modo Automático**:
+  1. Presiona `▶ Iniciar Reloj (Auto)`
+  2. Cada 1.5 segundos:
+     - Genera un número aleatorio para Registro B
+     - Ejecuta la operación seleccionada
+     - Actualiza ACC con el resultado
+     - Muestra el pulso del reloj
+  3. El procesador trabaja continuamente hasta presionar `⏹ Detener Reloj`
 
-Caso 3: Operación Lógica XOR
-Entrada:
+---
 
-A = 170 (10101010)
-B = 85 (01010101)
-Operación: XOR
-Resultado:
+## 📦 Requisitos
 
-Decimal: 255
-Hexadecimal: 0xFF
-Binario: 11111111
-Banderas:
+- **Python 3.8+**
+- **Tkinter** (incluido por defecto en Python)
+- No requiere bibliotecas externas
 
-Z = 0
-N = 1 ✓ (bit 7 = 1)
-C = 0 (no aplica en operaciones lógicas)
-V = 0 (no aplica en operaciones lógicas)
+---
 
-Este simulador permite aprender:
-- Cómo funciona una ALU real a nivel de bits
-- El concepto de complemento a 2 para números negativos
-- La diferencia entre overflow (V) y carry (C)
-- Operaciones lógicas bit a bit
-- Cómo las banderas ayudan a la CPU a tomar decisiones
-- Diseño de interfaces para aplicaciones educativas
-- El código está ampliamente comentado para facilitar el estudio y comprensión de cada concepto.
+## 🚀 Instalación
+
+```bash
+# Clonar o descargar el repositorio
+git clone <URL_DEL_REPO>
+cd "Funcionamiento del ALU"
+
+# Ejecutar el simulador
+python alu_simulator.py
+```
+
+---
+
+## 🎮 Uso Básico
+
+### Operación Manual
+
+1. **Ingresa valores** en los registros ACC y TMP (0-255)
+2. **Selecciona una operación** (ADD, SUB, AND, etc.)
+3. **Observa**:
+   - El resultado en 3 formatos
+   - Las banderas LED activadas
+   - La explicación en la barra de estado
+4. (Opcional) **Activa "Ver como Signed"** para interpretar complemento a 2
+
+### Modo Reloj Automático
+
+1. **Selecciona una operación** (ej: ADD)
+2. **Presiona "▶ Iniciar Reloj (Auto)"**
+3. **Observa** cómo el procesador:
+   - Genera datos aleatorios
+   - Ejecuta operaciones automáticamente
+   - Actualiza el acumulador
+   - Parpadea el LED de pulso
+4. **Presiona "⏹ Detener Reloj"** para parar
+
+### Interacción con Bits
+
+1. **Escribe un número** (ej: 170) → Los bits se activan automáticamente
+2. **Haz clic en un bit** (ej: Bit 7) → El número se actualiza (+128)
+3. Los binarios se muestran con formato nibbles: `1010 1010`
+
+---
+
+## 🔍 Funcionalidades Detalladas
+
+### Operaciones Aritméticas
+
+#### ADD (Suma)
+
+```
+ACC = 200, TMP = 100
+200 + 100 = 300 (en 9 bits)
+Resultado: 44 (300 & 0xFF)
+Banderas: C=1 (hubo carry)
+```
+
+#### SUB (Resta)
+
+```
+ACC = 5, TMP = 10
+5 - 10 = -5 (en complemento a 2)
+Resultado: 251 (0xFB)
+Banderas: C=1 (borrow), N=1 (negativo)
+```
+
+### Operaciones Lógicas
+
+#### AND
+
+```
+ACC = 170 (10101010)
+TMP = 85  (01010101)
+Resultado: 0 (00000000)
+Banderas: Z=1 (resultado cero)
+```
+
+#### XOR
+
+```
+ACC = 170 (10101010)
+TMP = 85  (01010101)
+Resultado: 255 (11111111)
+Banderas: N=1 (bit 7 activo)
+```
+
+### Sistema de Banderas
+
+| Bandera | Nombre   | Cuándo se activa              | Color LED | Prioridad |
+| ------- | -------- | ----------------------------- | --------- | --------- |
+| **V**   | Overflow | Error en aritmética con signo | 🔴 Rojo   | Alta      |
+| **C**   | Carry    | Desbordamiento sin signo      | 🔴 Rojo   | Alta      |
+| **N**   | Negative | Bit 7 = 1                     | 🟢 Verde  | Media     |
+| **Z**   | Zero     | Resultado = 0                 | 🟢 Verde  | Baja      |
+
+---
+
+## 🏗️ Arquitectura del Código
+
+### Backend: Clase `ALU`
+
+```python
+class ALU:
+    """Lógica pura de la ALU sin interfaz gráfica"""
+
+    def execute(self, a: int, b: int, opcode: int) -> tuple:
+        """Ejecuta operación y retorna (resultado, banderas)"""
+```
+
+**Responsabilidades**:
+
+- Ejecutar operaciones (ADD, SUB, AND, OR, XOR, NOT)
+- Calcular banderas (Z, N, C, V)
+- Aplicar máscara de 8 bits (`& 0xFF`)
+
+### Frontend: Clase `ALUSimulatorGUI`
+
+```python
+class ALUSimulatorGUI:
+    """Interfaz gráfica con Tkinter"""
+```
+
+**Responsabilidades**:
+
+- Crear todos los widgets (entradas, botones, LEDs)
+- Sincronizar bits ↔ texto
+- Controlar simulación de reloj
+- Actualizar visualización de resultados
+
+### Métodos Clave
+
+#### Sincronización Bidireccional
+
+```python
+def update_binary_a(self):      # Texto → Checkboxes
+def sync_bits_to_text_a(self):  # Checkboxes → Texto
+```
+
+#### Simulación de Reloj
+
+```python
+def start_clock(self):          # Inicia ciclo automático
+def stop_clock(self):           # Detiene ciclo
+def clock_tick(self):           # Ejecuta un ciclo (1.5s)
+def pulse_clock_led(self):      # Parpadeo LED
+```
+
+#### Visualización
+
+```python
+def update_result_display(self):    # Actualiza Dec/Hex/Bin
+def format_binary_nibbles(self):    # Formato 1111 1111
+def to_signed_8bit(self):           # Convierte a complemento a 2
+```
+
+---
+
+## 🎓 Aspectos Educativos
+
+### Conceptos Enseñados
+
+1. **Arquitectura de Computadoras**
+
+   - Funcionamiento de una ALU
+   - Registros (ACC, TMP)
+   - Ciclos de reloj
+
+2. **Representación Numérica**
+
+   - Binario, Decimal, Hexadecimal
+   - Complemento a 2
+   - Nibbles (medio byte)
+
+3. **Banderas de Estado**
+
+   - Por qué existen
+   - Cuándo se activan
+   - Diferencia entre Carry y Overflow
+
+4. **Operaciones Bit a Bit**
+   - AND, OR, XOR, NOT
+   - Máscaras de bits
+   - Desplazamientos lógicos
+
+### Comentarios en el Código
+
+- **+500 líneas** de comentarios explicativos
+- Ejemplos prácticos de cada concepto
+- Explicación de teoría (ej: cálculo de overflow)
+
+---
+
+## 📸 Capturas de Pantalla
+
+### Modo Normal
+
+```
+🖥️ SIMULADOR DE CPU - ALU DE 8 BITS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+● Ciclo de Reloj: [DETENIDO]
+
+REGISTROS DEL PROCESADOR (0-255)
+  Registro Acumulador (ACC): 255
+  Binario: 1111 1111
+  Bits: ☑7 ☑6 ☑5 ☑4 ☑3 ☑2 ☑1 ☑0
+
+  Registro B (TMP): 100
+  Binario: 0110 0100
+  Bits: ☐7 ☑6 ☑5 ☐4 ☐3 ☑2 ☐1 ☐0
+
+RESULTADO
+  Dec: 99  |  Hex: 0x63
+  Binario: 0110 0011
+  ☑ Ver como Signed (-128 a 127)
+  [🔄 Usar Resultado como A]
+  [▶ Iniciar Reloj (Auto)]
+
+BANDERAS DE ESTADO (FLAGS)
+  🟢 Z  ZERO          Resultado = 0
+  🟢 N  NEGATIVE      Bit 7 = 1
+  🔴 C  CARRY         Desbordamiento sin signo
+  🔴 V  OVERFLOW      Error de signo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Operación exitosa: ADD = 99
+```
+
+### Modo Reloj Activo
+
+```
+● Ciclo de Reloj: [ACTIVO - EJECUTANDO]
+    ^-- LED parpadeando rojo ↔ verde
+
+[⏹ Detener Reloj]  ← Botón rojo
+
+ACC actualiz ándose automáticamente cada 1.5s
+TMP recibiendo valores aleatorios (0-255)
+```
+
+---
+
+## 🛠️ Tamaño y Especificaciones
+
+- **Ventana**: 850x850 píxeles
+- **Líneas de código**: ~1,450 (con comentarios)
+- **Velocidad de reloj**: 1.5 segundos por ciclo
+- **Arquitectura**: Separación backend/frontend
+- **Performance**: Instantánea para todas las operaciones
+
+---
+
+## 📝 Notas Técnicas
+
+### Formato de Nibbles
+
+Todos los binarios se muestran con un espacio cada 4 bits:
+
+```
+Antes: 11111111
+Ahora: 1111 1111
+```
+
+### Toggle Signed/Unsigned
+
+- **Hex y Binario**: Siempre muestran valor raw (unsigned)
+- **Decimal**: Cambia según el toggle
+- **Banderas**: No se ven afectadas (calculadas correctamente)
+
+### Prevención de Loops
+
+Se usan 4 flags de control para evitar loops infinitos en la sincronización bidireccional:
+
+```python
+self.updating_from_text_a = False
+self.updating_from_bits_a = False
+self.updating_from_text_b = False
+self.updating_from_bits_b = False
+```
+
+---
+
+## 🎯 Casos de Uso
+
+### 1. Estudiante de Arquitectura de Computadoras
+
+- Visualiza cómo funciona una ALU real
+- Entiende el cálculo de banderas con ejemplos prácticos
+- Experimenta con complemento a 2
+
+### 2. Profesor/Instructor
+
+- Herramienta de demostración en clase
+- Modo reloj para simular un CPU "vivo"
+- Comentarios educativos para referencia
+
+### 3. Desarrollador Curioso
+
+- Estudia patrones de Tkinter avanzados
+- Aprende sincronización bidireccional
+- Ve implementación de `root.after()` para animaciones
+
+---
+
+## 🐛 Solución de Problemas
+
+### El reloj no inicia
+
+- Asegúrate de haber seleccionado una operación primero
+- Verifica que ACC y TMP tengan valores válidos (0-255)
+
+### Los bits no se sincronizan
+
+- Verifica que estás escribiendo números válidos (0-255)
+- Los valores fuera de rango se marcan en rojo
+
+### La ventana se ve cortada
+
+- El tamaño óptimo es 850x850 píxeles
+- Resolución mínima recomendada: 1024x768
+
+---
+
+## 📄 Licencia
+
+Este proyecto es de código abierto y con fines educativos.
+
+---
+
+## 👨‍💻 Autor
+
+Desarrollado como herramienta educativa para enseñar conceptos de arquitectura de computadoras y operaciones de bajo nivel.
+
+---
+
+## 🙏 Contribuciones
+
+¡Las contribuciones son bienvenidas! Ideas para mejoras:
+
+- Más operaciones (ROL, ROR, INC, DEC)
+- Velocidad de reloj ajustable
+- Modo paso a paso (step-by-step)
+- Exportar historial de operaciones
+- Temas visuales adicionales
+
+---
+
+**¡Disfruta explorando el funcionamiento interno de un procesador!** 🚀
